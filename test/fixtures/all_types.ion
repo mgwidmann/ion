@@ -1,0 +1,61 @@
+metadata::{
+    data_blocks: 2,
+    string: "test data with unicode \uABCD and \"quotes\"",
+    xml: xml::"<e a='v'>c</e>",
+    symbol: 'some symbol',
+    date: 2007-02-23T12:14Z,
+    milliseconds: 2007-02-23T12:14:33.079-08:00,
+    utc: 2007-02-23T20:14:33.079Z,
+    day_precision: 2007-01-01T,
+    month_precision: 2007-01T,
+    year_precision: 2007T,
+}
+
+data::{
+    null_value: null,
+    boolean_false: false,
+    boolean_true: true,
+    large_int: 448383922932,
+    medium_int: 38443,
+    small_int: 51,
+    zero_float: 0E0,
+    simple_float: 1.2e0,
+    overflowing_float64: 2.147483647e9,
+    float_nan: nan,
+    float_pos_inf: +inf,
+    float_neg_inf: -inf,
+    zero_decimal: 0E0,
+    simple_decimal: 1.2e0,
+    large_deciaml: 4.135792537d39,
+    blob: {{ VG8gaW5maW5pdHkuLi4gYW5kIGJleW9uZCE= }},
+    clob: {{ "This is a CLOB of text." }},
+    struct: {center:{x:1.0, y:12.5}, radius:3},
+    list: [ 1 , two ],
+    sexp: (cons 1 2),
+}
+
+data::{
+    null_value: null,
+    boolean_false: false,
+    boolean_true: true,
+    large_int: 398344939202,
+    medium_int: 83822,
+    small_int: 98,
+    zero_float: 0E0,
+    simple_float: 1.2e0,
+    overflowing_float64: 2.147483647e9,
+    float_nan: nan,
+    float_pos_inf: +inf,
+    float_neg_inf: -inf,
+    zero_decimal: 0E0,
+    simple_decimal: 1.2e0,
+    large_deciaml: 2.147483647d42,
+    blob: {{ dHdvIHBhZGRpbmcgY2hhcmFjdGVycw== }},
+    clob: {{
+    '''Another clob with user-defined encoding, '''
+    '''this time on multiple lines.'''
+    }},
+    struct: { field_name: annotation:: value },
+    list: [a , [b]],
+    sexp: (a+-b),
+}
