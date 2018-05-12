@@ -23,7 +23,7 @@ defmodule Ion.Parse do
   @doc """
   """
   def parse_file(filename) do
-    
+
   end
 
   @bool_type 1
@@ -77,10 +77,22 @@ defmodule Ion.Parse do
   defp parse_value(<< @pos_int_type :: size(4), 1 :: size(4), value, values :: bitstring>>) do
     {:ok, value, values}
   end
-  defp parse_value(<< @pos_int_type :: size(4), l :: size(4), value :: binary-size(l), values :: bitstring>>) do
+  defp parse_value(<< @pos_int_type :: size(4), l :: size(4), value :: binary-size(l), values :: bitstring>>) when l < 14 do
     bytes = l * 8
+    # Using binary-size keeps the value as a binary
     <<x :: size(bytes)>> = value
     {:ok, x, values}
+  end
+  defp parse_value(<< @pos_int_type :: size(4), l :: size(4), length_and_values :: bitstring>>) when l == 14 do
+    with {:ok, length, magnitude_and_values} <- parse_varuint(length_and_values),
+         << value :: binary-size(length), values :: bitstring >> <- magnitude_and_values do
+      bytes = length * 8
+      # Using binary-size keeps the value as a binary
+      <<x :: size(bytes)>> = value
+      {:ok, x, values}
+    else
+      e -> parse_value_error(e)
+    end
   end
 
   defp parse_value(<< @neg_int_type :: size(4), 0 :: size(4), values :: bitstring>>) do
@@ -89,10 +101,21 @@ defmodule Ion.Parse do
   defp parse_value(<< @neg_int_type :: size(4), 1 :: size(4), value, values :: bitstring>>) do
     {:ok, -value, values}
   end
-  defp parse_value(<< @neg_int_type :: size(4), l :: size(4), value :: binary-size(l), values :: bitstring>>) do
+  defp parse_value(<< @neg_int_type :: size(4), l :: size(4), value :: binary-size(l), values :: bitstring>>) when l < 14 do
     bytes = l * 8
     <<x :: size(bytes)>> = value
     {:ok, -x, values}
+  end
+  defp parse_value(<< @neg_int_type :: size(4), l :: size(4), length_and_values :: bitstring>>) when l == 14 do
+    with {:ok, length, magnitude_and_values} <- parse_varuint(length_and_values),
+         << value :: binary-size(length), values :: bitstring >> <- magnitude_and_values do
+      bytes = length * 8
+      # Using binary-size keeps the value as a binary
+      <<x :: size(bytes)>> = value
+      {:ok, -x, values}
+    else
+      e -> parse_value_error(e)
+    end
   end
 
   defp parse_value(<< @float_type :: size(4), 0 :: size(4), values :: bitstring>>) do
@@ -125,15 +148,14 @@ defmodule Ion.Parse do
       e -> parse_value_error(e)
     end
   end
-  defp parse_value(<< @decimal_type :: size(4), l :: size(4), exponent_and_coefficient :: binary-size(l), values :: bitstring>>) do
-    with {:ok, exponent, coeff} <- parse_varint(exponent_and_coefficient),
-         coefficient_size <- byte_size(coeff),
-         # Doesn't work correctly for negatives, -signed uses inverse negatives instead of a sign bit
-         # << coefficient :: size(coefficient_size)-unit(8)-signed >> <- coeff do
-         coefficient_size <- coefficient_size * 8 - 1,
-         << sign :: size(1), coefficient :: size(coefficient_size) >> <- coeff,
-         coefficient <- if(sign == 0, do: coefficient, else: -coefficient) do
-      {:ok, coefficient * :math.pow(10, exponent), values}
+  defp parse_value(<< @decimal_type :: size(4), l :: size(4), exponent_and_coefficient :: binary-size(l), values :: bitstring>>) when l > 2 and l < 14 do
+    exponent_and_coefficient(exponent_and_coefficient, values)
+  end
+
+  defp parse_value(<< @decimal_type :: size(4), l :: size(4), length_and_values :: bitstring>>) when l == 14 do
+    with {:ok, length, values} <- parse_varint(length_and_values),
+         << exponent_and_coefficient :: size(length)-unit(8), values :: bitstring >> <- values do
+      exponent_and_coefficient(<<exponent_and_coefficient :: size(length)-unit(8)>>, values)
     else
       e -> parse_value_error(e)
     end
@@ -199,6 +221,20 @@ defmodule Ion.Parse do
   end
   def parse_value_error(binary) do
     {:error, "Error converting Int found: #{inspect(binary)}"}
+  end
+
+  def exponent_and_coefficient(exponent_and_coefficient, values) do
+    with {:ok, exponent, coeff} <- parse_varint(exponent_and_coefficient),
+         coefficient_size <- byte_size(coeff),
+         # Doesn't work correctly for negatives, -signed uses inverse negatives instead of a sign bit
+         # << coefficient :: size(coefficient_size)-unit(8)-signed >> <- coeff do
+         coefficient_size <- coefficient_size * 8 - 1,
+         << sign :: size(1), coefficient :: size(coefficient_size) >> <- coeff,
+         coefficient <- if(sign == 0, do: coefficient, else: -coefficient) do
+      {:ok, coefficient * :math.pow(10, exponent), values}
+    else
+      e -> parse_value_error(e)
+    end
   end
 
   defp parse_values(values) do
