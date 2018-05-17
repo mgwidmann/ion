@@ -4,272 +4,237 @@ defmodule Ion.ParseTest do
 
   describe "plain binary" do
     test "null" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 15>>
-      )
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x0F>>)
     end
 
     test "null.null" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 15>>
-      )
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x0F>>)
     end
 
     test "null.bool" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 31>>
-      )
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x1F>>)
     end
 
     test "null.int" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 63>>
-      )
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x3F>>)
     end
 
     test "null.float" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 79>>
-      )
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x4F>>)
     end
 
     test "null.decimal" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 95>>
-      )
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x5F>>)
     end
 
     test "null.timestamp" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 111>>
-      )
-    end
-
-    test "null.string" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 143>>
-      )
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x6F>>)
     end
 
     test "null.symbol" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 127>>
-      )
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x7F>>)
     end
 
-    test "null.blob" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 175>>
-      )
+    test "null.string" do
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x8F>>)
     end
 
     test "null.clob" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 159>>
-      )
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x9F>>)
     end
 
-    test "null.struct" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 223>>
-      )
+    test "null.blob" do
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0xAF>>)
     end
 
     test "null.list" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 191>>
-      )
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0xBF>>)
     end
 
     test "null.sexp" do
-      assert {:ok, nil} = Ion.parse(
-        <<224, 1, 0, 234, 207>>
-      )
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0xCF>>)
+    end
+
+    test "null.struct" do
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0xDF>>)
     end
 
     test "boolean false" do
-      assert {:ok, false} = Ion.parse(
-        <<224, 1, 0, 234, 16>>
-      )
+      assert {:ok, false} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x10>>)
     end
 
     test "boolean true" do
-      assert {:ok, true} = Ion.parse(
-        <<224, 1, 0, 234, 17>>
-      )
+      assert {:ok, true} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x11>>)
     end
 
     test "integer 1" do
-      assert {:ok, 1} = Ion.parse(
-        <<224, 1, 0, 234, 33, 1>>
-      )
+      assert {:ok, 1} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x21, 0x1>>)
     end
 
     test "integer 0" do
-      assert {:ok, 0} = Ion.parse(
-        <<224, 1, 0, 234, 32>>
-      )
+      assert {:ok, 0} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x20>>)
     end
 
     test "integer -1" do
-      assert {:ok, -1} = Ion.parse(
-        <<224, 1, 0, 234, 49, 1>>
-      )
+      assert {:ok, -1} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x31, 0x1>>)
     end
 
     test "integer 123456" do
-      assert {:ok, 123456} = Ion.parse(
-        <<224, 1, 0, 234, 35, 1, 226, 64>>
-      )
+      assert {:ok, 123_456} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x23, 0x1, 0xE2, 0x40>>)
     end
 
     test "integer -123456" do
-      assert {:ok, -123456} = Ion.parse(
-        <<224, 1, 0, 234, 51, 1, 226, 64>>
-      )
+      assert {:ok, -123_456} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x33, 0x01, 0xE2, 0x40>>)
     end
 
     test "float 0e0" do
-      assert {:ok, 0.0} = Ion.parse(
-        <<224, 1, 0, 234, 64>>
-      )
+      assert {:ok, 0.0} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x40>>)
     end
 
     test "float -0e0" do
-      assert {:ok, -0.0} = Ion.parse(
-        <<224, 1, 0, 234, 72, 128, 0, 0, 0, 0, 0, 0, 0>>
-      )
+      assert {:ok, -0.0} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x48, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00>>)
     end
 
     test "float 1.0e0" do
-      assert {:ok, 1.0} = Ion.parse(
-        <<224, 1, 0, 234, 72, 63, 240, 0, 0, 0, 0, 0, 0>>
-      )
+      assert {:ok, 1.0} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x48, 0x3F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00>>)
     end
 
     test "float -0.12e4" do
-      assert {:ok, -1200.0} = Ion.parse(
-        <<224, 1, 0, 234, 72, 192, 146, 192, 0, 0, 0, 0, 0>>
-      )
+      assert {:ok, -1200.0} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x48, 0xC0, 0x92, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00>>)
     end
 
     test "float ∞" do
-      assert {:ok, :infinity} = Ion.parse(
-        <<224, 1, 0, 234, 72, 127, 240, 0, 0, 0, 0, 0, 0>>
-      )
+      assert {:ok, :infinity} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x48, 0x7F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00>>)
     end
 
     test "float -∞" do
-      assert {:ok, :neg_infinity} = Ion.parse(
-        <<224, 1, 0, 234, 72, 255, 240, 0, 0, 0, 0, 0, 0>>
-      )
+      assert {:ok, :neg_infinity} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x48, 0xFF, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00>>)
     end
 
     test "float NaN" do
-      assert {:ok, :nan} = Ion.parse(
-        <<224, 1, 0, 234, 72, 127, 248, 0, 0, 0, 0, 0, 0>>
-      )
+      assert {:ok, :nan} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x48, 0x7F, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00>>)
     end
 
     test "decimal 0D0" do
-      assert {:ok, 0.0} = Ion.parse(
-        <<224, 1, 0, 234, 80>>
-      )
+      assert {:ok, 0.0} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x50>>)
     end
 
     test "decimal -0D0" do
-      assert {:ok, 0.0} = Ion.parse(
-        <<224, 1, 0, 234, 82, 128, 128>>
-      )
+      assert {:ok, 0.0} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x52, 0x80, 0x80>>)
     end
 
     test "decimal 1.0D0" do
-      assert {:ok, 1.0e-64} = Ion.parse(
-        <<224, 1, 0, 234, 82, 193, 10>>
-      )
+      assert {:ok, 1.0e-64} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x52, 0xC1, 0xA>>)
     end
 
     test "decimal -0.12D4" do
-      assert {:ok, -0.12} = Ion.parse(
-        <<224, 1, 0, 234, 82, 130, 140>>
-      )
+      assert {:ok, -0.12} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x52, 0x82, 0x8C>>)
     end
 
     test "decimal 123456.789012" do
-      assert {:ok, 123456.789012} = Ion.parse(
-        <<224, 1, 0, 234, 86, 198, 28, 190, 153, 26, 20>>
-      )
+      assert {:ok, 123_456.789012} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x56, 0xC6, 0x1C, 0xBE, 0x99, 0x1A, 0x14>>)
     end
 
     test "decimal -123456.789012" do
-      assert {:ok, -123456.789012} = Ion.parse(
-        <<224, 1, 0, 234, 86, 198, 156, 190, 153, 26, 20>>
-      )
+      assert {:ok, -123_456.789012} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x56, 0xC6, 0x9C, 0xBE, 0x99, 0x1A, 0x14>>)
     end
 
     test "decimal 12345678901234567890.12345678901234567890" do
-      assert {:ok, 12345678901234567890.12345678901234567890} = Ion.parse(
-        <<224, 1, 0, 234, 94, 146, 212, 3, 160, 201, 32, 117, 192, 219, 243, 184, 172,
-        188, 95, 150, 206, 63, 10, 210>>
-      )
+      assert {:ok, 12_345_678_901_234_567_890.12345678901234567890} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x5E, 0x92, 0xD4, 0x03, 0xA0, 0xC9, 0x20, 0x75, 0xC0, 0xDB, 0xF3, 0xB8, 0xAC, 0xBC, 0x5F, 0x96, 0xCE, 0x3F, 0xA, 0xD2>>)
     end
 
     test "decimal -12345678901234567890.12345678901234567890" do
-      assert {:ok, -12345678901234567890.12345678901234567890} = Ion.parse(
-        <<224, 1, 0, 234, 94, 146, 212, 131, 160, 201, 32, 117, 192, 219, 243, 184, 172,
-        188, 95, 150, 206, 63, 10, 210>>
-      )
+      assert {:ok, -12_345_678_901_234_567_890.12345678901234567890} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x5E, 0x92, 0xD4, 0x83, 0xA0, 0xC9, 0x20, 0x75, 0xC0, 0xDB, 0xF3, 0xB8, 0xAC, 0xBC, 0x5F, 0x96, 0xCE, 0x3F, 0xA, 0xD2>>)
     end
 
     # 1.2345678901234568e308 is max exponent representable in the EVM
     test "decimal superhuge" do
-      assert {:ok, 123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345} = Ion.parse(
-        <<224, 1, 0, 234, 46, 197, 2, 36, 212, 78, 12, 86, 245, 55, 99, 40, 21, 242, 80,
-        16, 22, 170, 124, 17, 241, 92, 47, 183, 41, 233, 190, 18, 73, 188, 232, 45,
-        66, 70, 243, 105, 204, 226, 213, 80, 57, 198, 43, 86, 30, 215, 221, 159, 191,
-        89, 167, 192, 125, 134, 11, 174, 166, 16, 12, 127, 16, 24, 144, 204, 2, 188,
-        116, 241, 226, 223, 121>>
-      )
+      assert {:ok, 123_456_789_012_345_678_901_234_567_890_123_456_789_012_345_678_901_234_567_890_123_456_789_012_345_678_901_234_567_890_123_456_789_012_345_678_901_234_567_890_123_456_789_012_345_678_901_234_567_890_123_456_789_012_345} =
+               Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x2E, 0xC5, 0x02, 0x24, 0xD4, 0x4E, 0x0C, 0x56, 0xF5, 0x37, 0x63, 0x28, 0x15, 0xF2, 0x50, 0x10, 0x16, 0xAA, 0x7C, 0x11, 0xF1, 0x5C, 0x2F, 0xB7, 0x29, 0xE9, 0xBE, 0x12, 0x49, 0xBC, 0xE8, 0x2D, 0x42, 0x46, 0xF3, 0x69, 0xCC, 0xE2, 0xD5, 0x50, 0x39, 0xC6, 0x2B, 0x56, 0x1E, 0xD7, 0xDD, 0x9F, 0xBF, 0x59, 0xA7, 0xC0, 0x7D, 0x86, 0x0B, 0xAE, 0xA6, 0x10, 0x0C, 0x7F, 0x10, 0x18, 0x90, 0xCC, 0x02, 0xBC, 0x74, 0xF1, 0xE2, 0xDF, 0x79>>)
     end
 
     test "decimal -superhuge" do
-      assert {:ok, -123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345} = Ion.parse(
-        <<224, 1, 0, 234, 62, 197, 2, 36, 212, 78, 12, 86, 245, 55, 99, 40, 21, 242, 80,
-        16, 22, 170, 124, 17, 241, 92, 47, 183, 41, 233, 190, 18, 73, 188, 232, 45,
-        66, 70, 243, 105, 204, 226, 213, 80, 57, 198, 43, 86, 30, 215, 221, 159, 191,
-        89, 167, 192, 125, 134, 11, 174, 166, 16, 12, 127, 16, 24, 144, 204, 2, 188,
-        116, 241, 226, 223, 121>>
-      )
+      assert {:ok, -123_456_789_012_345_678_901_234_567_890_123_456_789_012_345_678_901_234_567_890_123_456_789_012_345_678_901_234_567_890_123_456_789_012_345_678_901_234_567_890_123_456_789_012_345_678_901_234_567_890_123_456_789_012_345} =
+               Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x3E, 0xC5, 0x02, 0x24, 0xD4, 0x4E, 0x0C, 0x56, 0xF5, 0x37, 0x63, 0x28, 0x15, 0xF2, 0x50, 0x10, 0x16, 0xAA, 0x7C, 0x11, 0xF1, 0x5C, 0x2F, 0xB7, 0x29, 0xE9, 0xBE, 0x12, 0x49, 0xBC, 0xE8, 0x2D, 0x42, 0x46, 0xF3, 0x69, 0xCC, 0xE2, 0xD5, 0x50, 0x39, 0xC6, 0x2B, 0x56, 0x1E, 0xD7, 0xDD, 0x9F, 0xBF, 0x59, 0xA7, 0xC0, 0x7D, 0x86, 0x0B, 0xAE, 0xA6, 0x10, 0x0C, 0x7F, 0x10, 0x18, 0x90, 0xCC, 0x02, 0xBC, 0x74, 0xF1, 0xE2, 0xDF, 0x79>>)
     end
 
-    # test "struct" do
-    #   # {a: null}
-    #   assert {:ok, nil} = Ion.parse(
-    #     <<224, 1, 0, 234,
-    #     # Annotation type with L of 7
-    #     231,
-    #     # length = 1
-    #     129,
-    #     # annot_length = 3
-    #     131,
-    #     # struct with L of 4
-    #     212,
-    #     # length varuint 7
-    #     135,
-    #     # varuint = 50
-    #     178,
-    #     # varuint = 1
-    #     129,
-    #     # a
-    #     97,
-    #     # ?? struct with L of 3
-    #     210,
-    #     # varuint 10
-    #     138,
-    #     # null
-    #     15>>
-    #   )
-    # end
+    @tag :pending
+    test "timestamp" do
+      assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x6A, 0x80, 0x0F, 0xD0, 0x81, 0xB1, 0x80, 0x80, 0x81, 0x81, 0x80, 0x80, 0x80, 0xC2, 0x00>>)
+    end
+
+    @tag :pending
+    test "symbol" do
+      assert {:ok, nil} =
+               Ion.parse(<<
+                 0xE0,
+                 0x01,
+                 0x00,
+                 0xEA,
+                 # Annotation of length 12
+                 0xEC,
+                 # Annot length 1, annot = 3 ($ion_symbol_table)
+                 0x81,
+                 0x83,
+                 # Start value of annotation, struct length 9
+                 0xD9,
+                 # symbols list identifier
+                 0x87,
+                 # list length 7 bytes
+                 0xB7,
+                 # string length 6
+                 0x86,
+                 # "symbol"
+                 # End value of annotation
+                 0x73,
+                 0x79,
+                 0x6D,
+                 0x62,
+                 0x6F,
+                 0x6C,
+                 # Symbol type length 1
+                 0x71,
+                 # Value: 0xA
+                 0xA
+               >>)
+    end
+
+    test "struct" do
+      # {}
+      assert {:ok, %{}} == Ion.parse(<<0xE0, 0x1, 0x0, 0xEA, 0xD0>>)
+    end
+
+    @tag :focus
+    test "struct with key/value" do
+      # {a: true}
+      assert {:ok, %{a: true}} ==
+               Ion.parse(<<
+                 0xE0,
+                 0x01,
+                 0x00,
+                 0xEA,
+                 # Annotation of length 7, annot_length = 1, annot = 3
+                 0xE7,
+                 0x81,
+                 0x83,
+                 # Start value of annotation, struct length 4
+                 0xD4,
+                 # symbols list identifier
+                 0x87,
+                 # list of length 2 bytes
+                 0xB2,
+                 # string length 1
+                 0x81,
+                 # End annotation value, "a"
+                 0x61,
+                 # struct length 2
+                 0xD2,
+                 # field name
+                 0x8A,
+                 # value: true
+                 0x11
+               >>)
+    end
 
     # test "annotation" do
     #   assert {:ok, 1} = Ion.parse(
