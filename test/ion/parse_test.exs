@@ -163,40 +163,29 @@ defmodule Ion.ParseTest do
       assert {:ok, nil} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x6A, 0x80, 0x0F, 0xD0, 0x81, 0xB1, 0x80, 0x80, 0x81, 0x81, 0x80, 0x80, 0x80, 0xC2, 0x00>>)
     end
 
-    @tag :pending
     test "symbol" do
-      assert {:ok, nil} =
-               Ion.parse(<<
-                 0xE0,
-                 0x01,
-                 0x00,
-                 0xEA,
-                 # Annotation of length 12
-                 0xEC,
-                 # Annot length 1, annot = 3 ($ion_symbol_table)
-                 0x81,
-                 0x83,
-                 # Start value of annotation, struct length 9
-                 0xD9,
-                 # symbols list identifier
-                 0x87,
-                 # list length 7 bytes
-                 0xB7,
-                 # string length 6
-                 0x86,
-                 # "symbol"
-                 # End value of annotation
-                 0x73,
-                 0x79,
-                 0x6D,
-                 0x62,
-                 0x6F,
-                 0x6C,
-                 # Symbol type length 1
-                 0x71,
-                 # Value: 0xA
-                 0xA
-               >>)
+      assert {:ok, "symbol"} = Ion.parse(<<
+        0xE0, 0x01, 0x00, 0xEA,
+        # Annotation of length 12
+        0xEC,
+        # Annot length 1, annot = 3 ($ion_symbol_table)
+        0x81, 0x83,
+        # Start value of annotation, struct length 9
+        0xD9,
+        # symbols list identifier
+        0x87,
+        # list length 7 bytes
+        0xB7,
+        # string length 6
+        0x86,
+        # "symbol"
+        0x73, 0x79, 0x6D, 0x62,
+        0x6F, 0x6C, # End value of annotation
+        # Symbol type length 1
+        0x71,
+        # Value: 10 referencing the first symbol in symbol table, "symbol"
+        0xA
+      >>)
     end
 
     test "struct" do
@@ -204,36 +193,29 @@ defmodule Ion.ParseTest do
       assert {:ok, %{}} == Ion.parse(<<0xE0, 0x1, 0x0, 0xEA, 0xD0>>)
     end
 
-    @tag :focus
     test "struct with key/value" do
       # {a: true}
-      assert {:ok, %{a: true}} ==
-               Ion.parse(<<
-                 0xE0,
-                 0x01,
-                 0x00,
-                 0xEA,
-                 # Annotation of length 7, annot_length = 1, annot = 3
-                 0xE7,
-                 0x81,
-                 0x83,
-                 # Start value of annotation, struct length 4
-                 0xD4,
-                 # symbols list identifier
-                 0x87,
-                 # list of length 2 bytes
-                 0xB2,
-                 # string length 1
-                 0x81,
-                 # End annotation value, "a"
-                 0x61,
-                 # struct length 2
-                 0xD2,
-                 # field name
-                 0x8A,
-                 # value: true
-                 0x11
-               >>)
+      assert {:ok, %{"a" => true}} == Ion.parse(<<
+        0xE0, 0x01, 0x00, 0xEA,
+        # Annotation of length 7, annot_length = 1, annot = 3
+        0xE7, 0x81, 0x83,
+        # Start value of annotation, struct length 4
+        0xD4,
+        # symbols list identifier
+        0x87,
+        # list of length 2 bytes
+        0xB2,
+        # string length 1
+        0x81,
+        # End annotation value, "a"
+        0x61,
+        # struct length 2
+        0xD2,
+        # field name
+        0x8A,
+        # value: true
+        0x11
+      >>)
     end
 
     # test "annotation" do

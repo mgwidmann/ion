@@ -86,53 +86,46 @@ defmodule Ion.Parse do
   ]
 
   # nil for all types
-  defp parse_value(<<type::size(4), @null_type::size(4), 0, values::bitstring>>, result)
-       when type in @all_types do
+  defp parse_value(<<type::size(4), @null_type::size(4), 0, values::bitstring>>, _metadata) when type in @all_types do
     {:ok, nil, values}
   end
 
-  defp parse_value(<<type::size(4), @null_type::size(4), values::bitstring>>, result)
-       when type in @all_types do
+  defp parse_value(<<type::size(4), @null_type::size(4), values::bitstring>>, _metadata) when type in @all_types do
     {:ok, nil, values}
   end
 
-  defp parse_value(<<0::size(4), @null_type::size(4), values::bitstring>>, result) do
+  defp parse_value(<<0::size(4), @null_type::size(4), values::bitstring>>, _metadata) do
     {:ok, nil, values}
   end
 
-  defp parse_value(<<@bool_type::size(4), 0::size(4), values::bitstring>>, result) do
+  defp parse_value(<<@bool_type::size(4), 0::size(4), values::bitstring>>, _metadata) do
     {:ok, false, values}
   end
 
-  defp parse_value(<<@bool_type::size(4), 1::size(4), values::bitstring>>, result) do
+  defp parse_value(<<@bool_type::size(4), 1::size(4), values::bitstring>>, _metadata) do
     {:ok, true, values}
   end
 
-  defp parse_value(<<@bool_type::size(4), @null_type::size(4), values::bitstring>>, result) do
+  defp parse_value(<<@bool_type::size(4), @null_type::size(4), values::bitstring>>, _metadata) do
     {:ok, nil, values}
   end
 
-  defp parse_value(<<@pos_int_type::size(4), 0::size(4), values::bitstring>>, result) do
+  defp parse_value(<<@pos_int_type::size(4), 0::size(4), values::bitstring>>, _metadata) do
     {:ok, 0, values}
   end
 
-  defp parse_value(<<@pos_int_type::size(4), 1::size(4), value, values::bitstring>>, result) do
+  defp parse_value(<<@pos_int_type::size(4), 1::size(4), value, values::bitstring>>, _metadata) do
     {:ok, value, values}
   end
 
-  defp parse_value(
-         <<@pos_int_type::size(4), l::size(4), value::binary-size(l), values::bitstring>>,
-         result
-       )
-       when l < 14 do
+  defp parse_value(<<@pos_int_type::size(4), l::size(4), value::binary-size(l), values::bitstring>>, _metadata) when l < 14 do
     bytes = l * 8
     # Using binary-size keeps the value as a binary
     <<x::size(bytes)>> = value
     {:ok, x, values}
   end
 
-  defp parse_value(<<@pos_int_type::size(4), l::size(4), length_and_values::bitstring>>, result)
-       when l == 14 do
+  defp parse_value(<<@pos_int_type::size(4), l::size(4), length_and_values::bitstring>>, _metadata) when l == 14 do
     with {:ok, length, magnitude_and_values} <- parse_varuint(length_and_values),
          <<value::binary-size(length), values::bitstring>> <- magnitude_and_values do
       bytes = length * 8
@@ -144,26 +137,21 @@ defmodule Ion.Parse do
     end
   end
 
-  defp parse_value(<<@neg_int_type::size(4), 0::size(4), values::bitstring>>, result) do
+  defp parse_value(<<@neg_int_type::size(4), 0::size(4), values::bitstring>>, _metadata) do
     {:error, "Encountered illegal negative 0 with #{byte_size(values)} bytes remaining to parse"}
   end
 
-  defp parse_value(<<@neg_int_type::size(4), 1::size(4), value, values::bitstring>>, result) do
+  defp parse_value(<<@neg_int_type::size(4), 1::size(4), value, values::bitstring>>, _metadata) do
     {:ok, -value, values}
   end
 
-  defp parse_value(
-         <<@neg_int_type::size(4), l::size(4), value::binary-size(l), values::bitstring>>,
-         result
-       )
-       when l < 14 do
+  defp parse_value(<<@neg_int_type::size(4), l::size(4), value::binary-size(l), values::bitstring>>, _metadata) when l < 14 do
     bytes = l * 8
     <<x::size(bytes)>> = value
     {:ok, -x, values}
   end
 
-  defp parse_value(<<@neg_int_type::size(4), l::size(4), length_and_values::bitstring>>, result)
-       when l == 14 do
+  defp parse_value(<<@neg_int_type::size(4), l::size(4), length_and_values::bitstring>>, _metadata) when l == 14 do
     with {:ok, length, magnitude_and_values} <- parse_varuint(length_and_values),
          <<value::binary-size(length), values::bitstring>> <- magnitude_and_values do
       bytes = length * 8
@@ -175,50 +163,34 @@ defmodule Ion.Parse do
     end
   end
 
-  defp parse_value(<<@float_type::size(4), 0::size(4), values::bitstring>>, result) do
+  defp parse_value(<<@float_type::size(4), 0::size(4), values::bitstring>>, _metadata) do
     {:ok, 0.0, values}
   end
 
   # Infinity
-  defp parse_value(
-         <<@float_type::size(4), 8::size(4), 127, 240, 0, 0, 0, 0, 0, 0, values::bitstring>>,
-         result
-       ) do
+  defp parse_value(<<@float_type::size(4), 8::size(4), 127, 240, 0, 0, 0, 0, 0, 0, values::bitstring>>, _metadata) do
     {:ok, :infinity, values}
   end
 
   # Neg Infinity
-  defp parse_value(
-         <<@float_type::size(4), 8::size(4), 255, 240, 0, 0, 0, 0, 0, 0, values::bitstring>>,
-         result
-       ) do
+  defp parse_value(<<@float_type::size(4), 8::size(4), 255, 240, 0, 0, 0, 0, 0, 0, values::bitstring>>, _metadata) do
     {:ok, :neg_infinity, values}
   end
 
   # NaN
-  defp parse_value(
-         <<@float_type::size(4), 8::size(4), 127, 248, 0, 0, 0, 0, 0, 0, values::bitstring>>,
-         result
-       ) do
+  defp parse_value(<<@float_type::size(4), 8::size(4), 127, 248, 0, 0, 0, 0, 0, 0, values::bitstring>>, _metadata) do
     {:ok, :nan, values}
   end
 
-  defp parse_value(
-         <<@float_type::size(4), l::size(4), value::size(l)-unit(8)-float, values::bitstring>>,
-         result
-       ) do
+  defp parse_value(<<@float_type::size(4), l::size(4), value::size(l)-unit(8)-float, values::bitstring>>, _metadata) do
     {:ok, value, values}
   end
 
-  defp parse_value(<<@decimal_type::size(4), 0::size(4), values::bitstring>>, result) do
+  defp parse_value(<<@decimal_type::size(4), 0::size(4), values::bitstring>>, _metadata) do
     {:ok, 0.0, values}
   end
 
-  defp parse_value(
-         <<@decimal_type::size(4), l::size(4), exponent_and_coefficient::binary-size(l), values::bitstring>>,
-         result
-       )
-       when l == 2 do
+  defp parse_value(<<@decimal_type::size(4), l::size(4), exponent_and_coefficient::binary-size(l), values::bitstring>>, _metadata) when l == 2 do
     with {:ok, exponent, coeff} <- parse_int(exponent_and_coefficient),
          {:ok, coefficient, <<>>} <- parse_int(coeff) do
       {:ok, coefficient * :math.pow(10, exponent), values}
@@ -227,16 +199,11 @@ defmodule Ion.Parse do
     end
   end
 
-  defp parse_value(
-         <<@decimal_type::size(4), l::size(4), exponent_and_coefficient::binary-size(l), values::bitstring>>,
-         result
-       )
-       when l > 2 and l < 14 do
+  defp parse_value(<<@decimal_type::size(4), l::size(4), exponent_and_coefficient::binary-size(l), values::bitstring>>, _metadata) when l > 2 and l < 14 do
     exponent_and_coefficient(exponent_and_coefficient, values)
   end
 
-  defp parse_value(<<@decimal_type::size(4), l::size(4), length_and_values::bitstring>>, result)
-       when l == 14 do
+  defp parse_value(<<@decimal_type::size(4), l::size(4), length_and_values::bitstring>>, _metadata) when l == 14 do
     with {:ok, length, values} <- parse_varint(length_and_values),
          <<exponent_and_coefficient::size(length)-unit(8), values::bitstring>> <- values do
       exponent_and_coefficient(<<exponent_and_coefficient::size(length)-unit(8)>>, values)
@@ -245,39 +212,80 @@ defmodule Ion.Parse do
     end
   end
 
-  defp parse_value(
-         <<@timestamp_type::size(4), l::size(4), value::size(l)-unit(8), values::bitstring>>,
-         result
-       ) do
+  defp parse_value(<<@timestamp_type::size(4), l::size(4), value::size(l)-unit(8)-binary, values::bitstring>>, _metadata) do
     IO.inspect(l)
     IO.inspect(value, base: :hex)
     IO.inspect(values, base: :hex)
   end
 
-  defp parse_value(<<@struct_type::size(4), 0::size(4), values::bitstring>>, result) do
-    {:ok, %{}, values}
+  defp parse_value(<<@symbol_type::size(4), l::size(4), value::size(l)-unit(8), values::bitstring>>, %Ion.Metadata{symbols: symbols}) when l < 14 do
+    {:ok, symbols[value], values}
   end
 
-  defp parse_value(
-         <<@struct_type::size(4), l::size(4), value::size(l)-unit(8)-binary, values::bitstring>>,
-         result
-       )
-       when l != 14 do
+  defp parse_value(<<@symbol_type::size(4), l::size(4), length_and_values::bitstring>>, %Ion.Metadata{symbols: symbols}) when l == 14 do
+    with {:ok, length, values} <- parse_varuint(length_and_values),
+         <<value::size(length)-unit(8), values::bitstring>> <- values do
+      {:ok, symbols[value], values}
+    else
+      e -> e
+    end
+  end
+
+  defp parse_value(<<@string_type::size(4), l::size(4), value::size(l)-unit(8)-binary, values::bitstring>>, _metadata) when l < 14 do
     {:ok, value, values}
   end
 
-  defp parse_value(
-         <<@annotation_type::size(4), l::size(4), annotation::size(l)-unit(8)-binary, values::bitstring>>,
-         result
-       )
-       when l != 14 do
-    with {:ok, annotation_length, annot_and_value} <- parse_varuint(annotation) do
-      IO.puts("#{annotation_length} separating annot and values #{inspect(annot_and_value, base: :hex)}")
+  defp parse_value(<<@string_type::size(4), l::size(4), length_and_values::bitstring>>, _metadata) when l == 14 do
+    with {:ok, length, values} <- parse_varuint(length_and_values),
+         <<str::size(length)-unit(8)-binary, values::bitstring>> <- values do
+      {:ok, str, values}
+    else
+      e -> e
+    end
+  end
 
+  defp parse_value(<<clob_or_blob::size(4), l::size(4), value::size(l)-unit(8)-binary, values::bitstring>>, _metadata) when clob_or_blob in [@clob_type, @blob_type] and l < 14 do
+    {:ok, value, values}
+  end
+
+  defp parse_value(<<clob_or_blob::size(4), l::size(4), length_and_values::bitstring>>, _metadata) when clob_or_blob in [@clob_type, @blob_type] and l == 14 do
+    with {:ok, length, values} <- parse_varuint(length_and_values),
+         <<bin::size(length)-unit(8)-binary, values::bitstring>> <- values do
+      {:ok, bin, values}
+    else
+      e -> e
+    end
+  end
+
+  defp parse_value(<<@list_type::size(4), l::size(4), value::size(l)-unit(8)-binary, values::bitstring>>, metadata) do
+    case parse_values(value, metadata) do
+      {:ok, list_values} ->
+        {:ok, list_values, values}
+
+      e ->
+        {:error, "List with invalid elements: #{inspect(e)}"}
+    end
+  end
+
+  defp parse_value(<<@sexp_type::size(4), l::size(4), value::size(l)-unit(8)-binary, values::bitstring>>, _metadata) do
+    IO.puts("Sexp type")
+    IO.inspect(l)
+    IO.inspect(value, base: :hex)
+    IO.inspect(values, base: :hex)
+  end
+
+  defp parse_value(<<@struct_type::size(4), 0::size(4), values::bitstring>>, _metadata) do
+    {:ok, %{}, values}
+  end
+
+  defp parse_value(<<@struct_type::size(4), l::size(4), value::size(l)-unit(8)-binary, values::bitstring>>, metadata) when l != 14 do
+    {:ok, parse_struct(value, metadata), values}
+  end
+
+  defp parse_value(<<@annotation_type::size(4), l::size(4), annotation::size(l)-unit(8)-binary, values::bitstring>>, _metadata) when l != 14 do
+    with {:ok, annotation_length, annot_and_value} <- parse_varuint(annotation) do
       {annots, value} =
         Enum.reduce(0..(annotation_length - 1), {[], annot_and_value}, fn _, acc ->
-          IO.puts("Reducing with #{inspect(acc, base: :hex)}")
-
           with {annots, annot_and_value} <- acc,
                {:ok, annot, rest} <- parse_varuint(annot_and_value) do
             {[annot | annots], rest}
@@ -289,6 +297,19 @@ defmodule Ion.Parse do
       {:ok, {@annotation_type, annots, value}, values}
     else
       e -> parse_value_error(e)
+    end
+  end
+
+  def parse_struct(struct, metadata, result \\ %{})
+
+  def parse_struct(<<>>, _metadata, result), do: result
+
+  def parse_struct(struct, %Ion.Metadata{symbols: symbols} = metadata, result) do
+    with {:ok, field, values} <- parse_varuint(struct),
+         {:ok, value, values} <- parse_value(values, metadata) do
+      parse_struct(values, metadata, Map.put(result, symbols[field] || field, value))
+    else
+      e -> e
     end
   end
 
@@ -375,36 +396,33 @@ defmodule Ion.Parse do
   end
 
   defp parse_metadata(values) do
-    IO.puts("parse_metadata #{inspect(values)}")
-
     with {:ok, first_result, values} <- parse_value(values, %Ion.Metadata{}) do
       case first_result do
         {@annotation_type, annots, value} ->
-          IO.puts("got annotation of #{inspect(annots, base: :hex)} with value #{inspect(value, base: :hex)}")
           {:ok, struct, <<>>} = parse_value(value, %Ion.Metadata{})
           {:ok, Enum.reduce(annots, %Ion.Metadata{}, &parse_metadata(&1, &2, struct)), values, []}
 
         _ ->
-          IO.puts("Got someting else #{inspect(first_result)}")
           {:ok, %Ion.Metadata{}, values, [first_result]}
       end
     end
   end
 
-  defp parse_metadata(@symbol_table, metadata, <<1::size(1), @symbol_symbols::size(7), value::bitstring>>) do
-    IO.puts("Got symbol table: #{inspect(metadata)} with value #{inspect(value, base: :hex)}")
-    nil
+  @symbol_start_index 10
+  defp parse_metadata(@symbol_table, metadata, %{@symbol_symbols => symbols}) do
+    symbol_map = symbols |> Stream.with_index() |> Enum.reduce(%{}, fn {sym, i}, map -> Map.put(map, i + @symbol_start_index, sym) end)
+    %Ion.Metadata{metadata | symbols: symbol_map}
   end
 
   defp parse_document(document) do
-    IO.puts("parsing document")
-
     with {:ok, metadata, values, result} <- parse_metadata(document) do
       parse_values(values, metadata, result)
     else
       e -> e
     end
   end
+
+  defp parse_values(values, metadata, result \\ [])
 
   defp parse_values(<<>>, _metadata, result) do
     {:ok, Enum.reverse(result)}

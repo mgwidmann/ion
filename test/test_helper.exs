@@ -1,2 +1,2 @@
-ExUnit.configure(exclude: [:pending])
+ExUnit.configure(exclude: [:pending], only: [:focus])
 ExUnit.start()
