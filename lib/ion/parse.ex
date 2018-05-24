@@ -213,9 +213,31 @@ defmodule Ion.Parse do
   end
 
   defp parse_value(<<@timestamp_type::size(4), l::size(4), value::size(l)-unit(8)-binary, values::bitstring>>, _metadata) do
-    IO.inspect(l)
-    IO.inspect(value, base: :hex)
-    IO.inspect(values, base: :hex)
+    with {:ok, offset, value} <- parse_varint(value),
+         {:ok, year, value} <- parse_varuint(value) do
+      case value do
+        <<>> -> {:ok, %Date{year: year, month: nil, day: nil}, values} # offset only in DateTime
+        value ->
+          {:ok, month, value} = parse_varuint(value)
+          case value do
+            <<>> -> {:ok, %Date{year: year, month: month, day: nil}, values} # offset only in DateTime
+            value ->
+              {:ok, day, value} = parse_varuint(value)
+              case value do
+                <<>> -> {:ok, %Date{year: year, month: month, day: day}, values} # offset only in DateTime
+                value ->
+                  {:ok, hour, value} = parse_varuint(value)
+                  {:ok, minute, value} = parse_varuint(value)
+                  # case value do
+                  #   <<>> -> {:ok, %DateTime{year: year, month: month, day: day, hour: hour, minute: minute}}
+
+                  # end
+              end
+          end
+      end
+    else
+      e -> e
+    end
   end
 
   defp parse_value(<<@symbol_type::size(4), l::size(4), value::size(l)-unit(8), values::bitstring>>, %Ion.Metadata{symbols: symbols}) when l < 14 do
@@ -340,11 +362,13 @@ defmodule Ion.Parse do
   defp parse_varuint(binary, acc \\ nil)
 
   defp parse_varuint(<<0::size(1), value::size(7), values::bitstring>>, nil) do
-    parse_varuint(values, value)
+    use Bitwise
+    parse_varuint(values, value <<< 8)
   end
 
   defp parse_varuint(<<0::size(1), value::size(7), values::bitstring>>, total) do
-    parse_varuint(values, value + total)
+    use Bitwise
+    parse_varuint(values, (value <<< 8) + (total <<< 8) )
   end
 
   defp parse_varuint(<<1::size(1), value::size(7), values::bitstring>>, nil) do
@@ -352,7 +376,9 @@ defmodule Ion.Parse do
   end
 
   defp parse_varuint(<<1::size(1), value::size(7), values::bitstring>>, total) do
-    {:ok, value + total, values}
+    use Bitwise
+    value = (total >>> 1) + value
+    {:ok, value, values}
   end
 
   # defp parse_varuint(binary, _), do: {:error, binary}
