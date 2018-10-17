@@ -15,8 +15,11 @@ defmodule Ion.Parse do
       {:ok, results} ->
         {:ok, results}
 
-      {:error, reason} ->
-        {:error, reason}
+      {:error, reason, [partial_results]} ->
+        {:error, reason, partial_results}
+
+      {:error, reason, partial_results} ->
+        {:error, reason, partial_results}
     end
   end
 
@@ -29,21 +32,39 @@ defmodule Ion.Parse do
   def parse_file(filename) do
   end
 
-  @bool_type 1
-  @pos_int_type 2
-  @neg_int_type 3
-  @float_type 4
-  @decimal_type 5
-  @timestamp_type 6
-  @symbol_type 7
-  @string_type 8
-  @clob_type 9
-  @blob_type 10
-  @list_type 11
-  @sexp_type 12
-  @struct_type 13
-  @annotation_type 14
-  @null_type 15
+  @bool_type 0x1
+  @pos_int_type 0x2
+  @neg_int_type 0x3
+  @float_type 0x4
+  @decimal_type 0x5
+  @timestamp_type 0x6
+  @symbol_type 0x7
+  @string_type 0x8
+  @clob_type 0x9
+  @blob_type 0xA
+  @list_type 0xB
+  @sexp_type 0xC
+  @struct_type 0xD
+  @annotation_type 0xE
+  @null_type 0xF
+
+  @type_to_name %{
+    @bool_type => "boolean",
+    @pos_int_type => "positive integer",
+    @neg_int_type => "negative integer",
+    @float_type => "float",
+    @decimal_type => "decimal",
+    @timestamp_type => "timestamp",
+    @symbol_type => "symbol",
+    @string_type => "string",
+    @clob_type => "clob",
+    @blob_type => "blob",
+    @list_type => "list",
+    @sexp_type => "sexp",
+    @struct_type => "struct",
+    @annotation_type => "annotation",
+    @null_type => "null"
+  }
 
   @all_types [
     @bool_type,
@@ -72,6 +93,7 @@ defmodule Ion.Parse do
   @symbol_symbols 7
   @symbol_max_id 8
   @symbol_shared_table 9
+  @user_symbol_start_index 10
 
   @all_system_symbols [
     @symbol_ion,
@@ -214,29 +236,32 @@ defmodule Ion.Parse do
 
   defp parse_value(<<@timestamp_type::size(4), l::size(4), value::size(l)-unit(8)-binary, values::bitstring>>, _metadata) do
     with {:ok, offset, value} <- parse_varint(value),
-         {:ok, year, value} <- parse_varuint(value) do
-      case value do
-        <<>> -> {:ok, %Date{year: year, month: nil, day: nil}, values} # offset only in DateTime
-        value ->
-          {:ok, month, value} = parse_varuint(value)
-          case value do
-            <<>> -> {:ok, %Date{year: year, month: month, day: nil}, values} # offset only in DateTime
-            value ->
-              {:ok, day, value} = parse_varuint(value)
-              case value do
-                <<>> -> {:ok, %Date{year: year, month: month, day: day}, values} # offset only in DateTime
-                value ->
-                  {:ok, hour, value} = parse_varuint(value)
-                  {:ok, minute, value} = parse_varuint(value)
-                  # case value do
-                  #   <<>> -> {:ok, %DateTime{year: year, month: month, day: day, hour: hour, minute: minute}}
-
-                  # end
-              end
-          end
-      end
+         {:ok, year, value} <- parse_varuint(value),
+         [offset, year, <<_::size(1), _::bitstring>>] <- [offset, year, value],
+         {:ok, month, value} <- parse_varuint(value),
+         [offset, year, month, <<_::size(1), _::bitstring>>] <- [offset, year, month, value],
+         {:ok, day, value} <- parse_varuint(value),
+         [offset, year, month, day, <<_::size(1), _::bitstring>>] <- [offset, year, month, day, value],
+         {:ok, hour, value} <- parse_varuint(value),
+         {:ok, minute, value} <- parse_varuint(value),
+         [offset, year, month, day, hour, minute, <<_::size(1), _::bitstring>>] <- [offset, year, month, day, hour, minute, value],
+         {:ok, second, value} <- parse_varuint(value),
+         [offset, year, month, day, hour, minute, second, <<_::size(1), _::bitstring>>] <- [offset, year, month, day, hour, minute, second, value],
+         {:ok, exponent, value} <- parse_varint(value),
+         {:ok, coefficient, <<>>} <- parse_int(value) do
+      milliseconds = coefficient * :math.pow(10, exponent)
+      {:ok, %DateTime{year: year, month: month, day: day, hour: hour, minute: minute, second: second, utc_offset: offset, time_zone: "", zone_abbr: "", std_offset: offset}, values}
     else
-      e -> e
+      {:error, message} -> {:error, message}
+      [_offset, year, <<>>] -> {:ok, %Date{year: year, month: nil, day: nil}, values}
+      [_offset, year, month, <<>>] -> {:ok, %Date{year: year, month: month, day: nil}, values}
+      [_offset, year, month, day, <<>>] -> {:ok, %Date{year: year, month: month, day: day}, values}
+      [offset, year, month, day, hour, minute, <<>>] -> {:ok, %DateTime{year: year, month: month, day: day, hour: hour, minute: minute, second: 0, utc_offset: offset, time_zone: "", zone_abbr: "", std_offset: offset}, values}
+      [offset, year, month, day, hour, minute, second, <<>>] -> {:ok, %DateTime{year: year, month: month, day: day, hour: hour, minute: minute, second: second, utc_offset: offset, time_zone: "", zone_abbr: "", std_offset: offset}, values}
+      other ->
+        [remaining_binary | date_values] = Enum.reverse(other)
+        other = Enum.reverse(date_values)
+        {:error, "Unable to read binary timestamp #{inspect(other)} with remaining binary #{inspect(remaining_binary, base: :hex)}\nBinary is incorrect: #{inspect(value, base: :hex)}"}
     end
   end
 
@@ -279,11 +304,22 @@ defmodule Ion.Parse do
     end
   end
 
-  defp parse_value(<<@list_type::size(4), l::size(4), value::size(l)-unit(8)-binary, values::bitstring>>, metadata) do
+  defp parse_value(<<@list_type::size(4), l::size(4), value::size(l)-unit(8)-binary, values::bitstring>>, metadata) when l != 14 do
     case parse_values(value, metadata) do
       {:ok, list_values} ->
         {:ok, list_values, values}
 
+      e ->
+        {:error, "List with invalid elements: #{inspect(e)}"}
+    end
+  end
+
+  defp parse_value(<<@list_type::size(4), l::size(4), values::bitstring>>, metadata) when l == 14 do
+    with {:ok, length, values} <- parse_varuint(values),
+         <<value::size(length)-unit(8)-binary, values::bitstring>> <- values,
+         {:ok, list_values} <- parse_values(value, metadata) do
+      {:ok, list_values, values}
+    else
       e ->
         {:error, "List with invalid elements: #{inspect(e)}"}
     end
@@ -304,22 +340,61 @@ defmodule Ion.Parse do
     {:ok, parse_struct(value, metadata), values}
   end
 
-  defp parse_value(<<@annotation_type::size(4), l::size(4), annotation::size(l)-unit(8)-binary, values::bitstring>>, _metadata) when l != 14 do
-    with {:ok, annotation_length, annot_and_value} <- parse_varuint(annotation) do
-      {annots, value} =
-        Enum.reduce(0..(annotation_length - 1), {[], annot_and_value}, fn _, acc ->
-          with {annots, annot_and_value} <- acc,
-               {:ok, annot, rest} <- parse_varuint(annot_and_value) do
-            {[annot | annots], rest}
-          else
-            e -> parse_value_error(e)
-          end
-        end)
-
-      {:ok, {@annotation_type, annots, value}, values}
+  defp parse_value(<<@struct_type::size(4), l::size(4), values::bitstring>>, metadata) when l == 14 do
+    with {:ok, length, values} <- parse_varuint(values),
+         <<value::size(length)-unit(8)-binary, values::bitstring>> <- values do
+      {:ok, parse_struct(value, metadata), values}
     else
       e -> parse_value_error(e)
     end
+  end
+
+  defp parse_value(<<@annotation_type::size(4), l::size(4), annotation::size(l)-unit(8)-binary, values::bitstring>>, metadata) when l != 14 do
+    with {:ok, annotation_length, annot_and_value} <- parse_varuint(annotation) do
+      {:ok, parse_annotation(annotation_length, annot_and_value, metadata), values}
+    else
+      e -> parse_value_error(e)
+    end
+  end
+
+  defp parse_value(<<@annotation_type::size(4), l::size(4), values::bitstring>>, metadata) when l == 14 do
+    with {:ok, length, values} <- parse_varuint(values),
+         <<annotation::size(length)-unit(8)-binary, values::bitstring>> <- values,
+         {:ok, annotation_length, annot_and_value} <- parse_varuint(annotation) do
+      {:ok, parse_annotation(annotation_length, annot_and_value, metadata), values}
+    else
+      e -> parse_value_error(e)
+    end
+  end
+
+  defp parse_value(<<unknown_type::size(4), l::size(4), values::bitstring>>, metadata) do
+    parse_value_error({:error_message, "Unable to handle type #{@type_to_name[unknown_type]} (#{inspect(unknown_type, base: :hex)}) of length #{l}.\nMetadata: #{inspect(metadata)}\nRemaining binary: #{inspect(values, base: :hex)}"})
+  end
+
+  defp parse_annotation(annotation_length, annot_and_value, metadata = %Ion.Metadata{symbols: symbols}) do
+    {annots, value} =
+      Enum.reduce(0..(annotation_length - 1), {[], annot_and_value}, fn _, acc ->
+        with {annots, annot_and_value} <- acc,
+             {:ok, annot_integer, rest} <- parse_varuint(annot_and_value) do
+          case Map.fetch(symbols || %{}, annot_integer) do
+            {:ok, annotation} ->
+              {[annotation | annots], rest}
+
+            :error ->
+              # Only error out on unfound user symbols, system symbols are handled automatically
+              if annot_integer >= @user_symbol_start_index do
+                parse_value_error({:error_message, "Unable to find symbol #{annot_integer}, known symbols are #{inspect(symbols)}"})
+              else
+                {[annot_integer | annots], rest}
+              end
+          end
+        else
+          e -> parse_value_error(e)
+        end
+      end)
+
+    {:ok, value, <<>>} = parse_value(value, metadata)
+    {:annotation, annots, value}
   end
 
   def parse_struct(struct, metadata, result \\ %{})
@@ -368,7 +443,7 @@ defmodule Ion.Parse do
 
   defp parse_varuint(<<0::size(1), value::size(7), values::bitstring>>, total) do
     use Bitwise
-    parse_varuint(values, (value <<< 8) + (total <<< 8) )
+    parse_varuint(values, (value <<< 8) + (total <<< 8))
   end
 
   defp parse_varuint(<<1::size(1), value::size(7), values::bitstring>>, nil) do
@@ -399,6 +474,10 @@ defmodule Ion.Parse do
     {:error, "Error found: #{inspect(binary, base: :hex)}"}
   end
 
+  defp parse_value_error({:error_message, message}) do
+    {:error, message}
+  end
+
   defp parse_value_error({:error, binary}) do
     {:error, "Error found: #{inspect(binary, base: :hex)}"}
   end
@@ -424,9 +503,8 @@ defmodule Ion.Parse do
   defp parse_metadata(values) do
     with {:ok, first_result, values} <- parse_value(values, %Ion.Metadata{}) do
       case first_result do
-        {@annotation_type, annots, value} ->
-          {:ok, struct, <<>>} = parse_value(value, %Ion.Metadata{})
-          {:ok, Enum.reduce(annots, %Ion.Metadata{}, &parse_metadata(&1, &2, struct)), values, []}
+        {:annotation, annots, symbol_table} ->
+          {:ok, Enum.reduce(annots, %Ion.Metadata{}, &parse_metadata(&1, &2, symbol_table)), values, []}
 
         _ ->
           {:ok, %Ion.Metadata{}, values, [first_result]}
@@ -434,9 +512,8 @@ defmodule Ion.Parse do
     end
   end
 
-  @symbol_start_index 10
   defp parse_metadata(@symbol_table, metadata, %{@symbol_symbols => symbols}) do
-    symbol_map = symbols |> Stream.with_index() |> Enum.reduce(%{}, fn {sym, i}, map -> Map.put(map, i + @symbol_start_index, sym) end)
+    symbol_map = symbols |> Stream.with_index() |> Enum.reduce(%{}, fn {sym, i}, map -> Map.put(map, i + @user_symbol_start_index, sym) end)
     %Ion.Metadata{metadata | symbols: symbol_map}
   end
 
@@ -458,7 +535,7 @@ defmodule Ion.Parse do
     with {:ok, value, values} <- parse_value(values, metadata) do
       parse_values(values, metadata, [value | result])
     else
-      e -> e
+      {:error, message} -> {:error, message, Enum.reverse(result)}
     end
   end
 end

@@ -139,11 +139,11 @@ defmodule Ion.ParseTest do
       assert {:ok, -123_456.789012} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x56, 0xC6, 0x9C, 0xBE, 0x99, 0x1A, 0x14>>)
     end
 
-    test "decimal 12345678901234567890.12345678901234567890" do
+    test "decimal 12,345,678,901,234,567,890.12345678901234567890" do
       assert {:ok, 12_345_678_901_234_567_890.12345678901234567890} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x5E, 0x92, 0xD4, 0x03, 0xA0, 0xC9, 0x20, 0x75, 0xC0, 0xDB, 0xF3, 0xB8, 0xAC, 0xBC, 0x5F, 0x96, 0xCE, 0x3F, 0xA, 0xD2>>)
     end
 
-    test "decimal -12345678901234567890.12345678901234567890" do
+    test "decimal -12,345,678,901,234,567,890.12345678901234567890" do
       assert {:ok, -12_345_678_901_234_567_890.12345678901234567890} = Ion.parse(<<0xE0, 0x01, 0x00, 0xEA, 0x5E, 0x92, 0xD4, 0x83, 0xA0, 0xC9, 0x20, 0x75, 0xC0, 0xDB, 0xF3, 0xB8, 0xAC, 0xBC, 0x5F, 0x96, 0xCE, 0x3F, 0xA, 0xD2>>)
     end
 
@@ -168,10 +168,10 @@ defmodule Ion.ParseTest do
       >>)
     end
 
-    @tag :pending
     test "large timestamp" do
-      assert {:ok, nil} = Ion.parse(<< # 2000-01-01T00:00:00.00Z
+      assert {:ok, %DateTime{day: 1, hour: 0, microsecond: {0, 0}, minute: 0, month: 1, second: 0, std_offset: 0, time_zone: "", utc_offset: 0, year: 2000, zone_abbr: ""}} = Ion.parse(<< # 2000-01-01T00:00:00.00Z
         0xE0, 0x01, 0x00, 0xEA,
+        # Timestamp type of length 10
         0x6A, 0x80, 0x0F, 0xD0,
         0x81, 0x81, 0x80, 0x80,
         0x80, 0xC2, 0x0
@@ -233,31 +233,16 @@ defmodule Ion.ParseTest do
       >>)
     end
 
-    # test "annotation" do
-    #   assert {:ok, 1} = Ion.parse(
-    #     <<224, 1, 0, 234,
-    #     # Annotation type with L of 9
-    #     233,
-    #     # length = 1
-    #     129,
-    #     # annot_length = 3
-    #     131,
-    #     # WTF??
-    #     # 214 = varuint of 86
-    #     # 135 = varuint of 7
-    #     # 180 = varuint of 52
-    #     214, 135, 180, 131,
-    #     # abc
-    #     97, 98, 99,
-    #     # WTF
-    #     # 228 = varuint of 100
-    #     # 129 = varuint of 1
-    #     # 138 = varuint of 10
-    #     # 33 ???
-    #     228, 129, 138, 33,
-    #     # Value
-    #     12>>
-    #   )
-    # end
+    test "annotation" do
+      assert {:ok, {:annotation, ["an_annotation"], %{}}} == Ion.parse(<< # an_annotation::{}
+        0xE0, 0x01, 0x00, 0xEA,
+        0xEE, 0x95, 0x81, 0x83,
+        0xDE, 0x91, 0x87, 0xBE,
+        0x8E, 0x8D, 0x61, 0x6E,
+        0x5F, 0x61, 0x6E, 0x6E,
+        0x6F, 0x74, 0x61, 0x74,
+        0x69, 0x6F, 0x6E, 0xE3,
+        0x81, 0x8A, 0xD0>>)
+    end
   end
 end
