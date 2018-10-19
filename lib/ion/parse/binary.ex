@@ -1,4 +1,4 @@
-defmodule Ion.Parse do
+defmodule Ion.Parse.Binary do
   @moduledoc """
   """
 

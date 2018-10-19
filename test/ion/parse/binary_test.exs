@@ -1,6 +1,6 @@
-defmodule Ion.ParseTest do
+defmodule Ion.Parse.BinaryTest do
   use ExUnit.Case
-  doctest Ion.Parse
+  doctest Ion.Parse.Binary
 
   describe "plain binary" do
     test "null" do
