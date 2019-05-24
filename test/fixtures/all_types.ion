@@ -1,6 +1,6 @@
 metadata::{
     data_blocks: 2,
-    string: "test data with unicode \uABCD and \"quotes\"",
+    string: "test data with unicode \u1234 and \"quotes\"",
     xml: xml::"<e a='v'>c</e>",
     symbol: 'some symbol',
     date: 2007-02-23T12:14Z,

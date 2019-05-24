@@ -26,8 +26,7 @@ defmodule Ion.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:dialyxir, "1.0.0-rc.3", runtime: false}
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
+      {:dialyxir, "1.0.0-rc.6", runtime: false}
     ]
   end
 

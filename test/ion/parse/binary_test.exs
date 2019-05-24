@@ -245,4 +245,35 @@ defmodule Ion.Parse.BinaryTest do
         0x81, 0x8A, 0xD0>>)
     end
   end
+
+  describe "files" do
+    test "all types ungzipped" do
+      assert {:ok, [
+        {:annotation, ["metadata"],
+          %{
+            "data_blocks" => 2,
+            "date" => %DateTime{year: 2007, month: 2, day: 23, hour: 12, minute: 14, second: 00, microsecond: {0, 0}, utc_offset: 0, time_zone: "", zone_abbr: "", std_offset: 0},
+            "day_precision" => ~D[2007-01-01],
+            "milliseconds" => %DateTime{year: 2007, month: 2, day: 23, hour: 20, minute: 14, second: 33, microsecond: {0, 0}, utc_offset: -99, time_zone: "", zone_abbr: "", std_offset: -99},
+            "month_precision" => %Date{year: 2007, month: 1, day: nil},
+            "string" => "test data with unicode ሴ and \"quotes\"",
+            "symbol" => "some symbol",
+            "utc" => %DateTime{year: 2007, month: 2, day: 23, hour: 20, minute: 14, second: 33, microsecond: {0, 0}, utc_offset: 0, time_zone: "", zone_abbr: "", std_offset: 0},
+            "xml" => {:annotation, ["xml"], "<e a='v'>c</e>"},
+            "year_precision" => %Date{year: 2007, month: nil, day: nil}
+          }
+        },
+        {:annotation, ["data"],
+          %{
+
+          }
+        },
+        {:annotation, ["data"],
+          %{
+
+          }
+        }
+      ]} == Ion.parse_file("test/fixtures/all_types_binary.ion")
+    end
+  end
 end
